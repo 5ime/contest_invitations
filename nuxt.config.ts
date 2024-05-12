@@ -1,4 +1,7 @@
-export default defineNuxtConfig({
+export default({
   devtools: { enabled: false },
-  modules: ["@nuxtjs/tailwindcss"]
+  modules: ["@nuxtjs/tailwindcss"],
+  serverMiddleware: [
+    '~/server-middleware/poster'
+  ],
 })
