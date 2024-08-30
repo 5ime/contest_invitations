@@ -45,19 +45,17 @@ async function handleApiCall() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: teamName }),
     });
-    if (!response.ok) throw new Error(`Failed to create team: ${response.statusText}`);
     const data = await response.blob();
     generatedPoster.value = URL.createObjectURL(data);
   } catch (error) {
     console.error('An error occurred:', error);
-    alert(error.message);
   } finally {
     isRequesting.value = false;
   }
 }
 </script>
 
-<style scoped>
+<style>
 ::selection { background: #0095ff1a; }
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-thumb { border-radius: 10px; background: #0003; }
