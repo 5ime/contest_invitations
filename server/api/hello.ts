@@ -2,31 +2,23 @@ import { defineEventHandler, readBody } from 'h3';
 import sharp from 'sharp';
 
 export default defineEventHandler(async (event) => {
-  const body = await readBody(event);
-  const name = body.name;
-
   try {
-    const baseImage = 'public/logo.png';
-    
-    // 使用 sharp 获取图片尺寸
-    const metadata = await sharp(baseImage).metadata();
+    const { name } = await readBody(event);
+    const baseImage = 'public/invitations.png';
 
-    const width = metadata.width || 1000;  // 如果未能获取宽度，默认值为 1000
-    const height = metadata.height || 800; // 如果未能获取高度，默认值为 800
+    const { width = 1000, height = 800 } = await sharp(baseImage).metadata();
 
-    const fontSize = 100
-    const textX = width / 2;  // 文本的 x 位置为图片宽度的一半
-    // const textY = height / 2; // 文本的 y 位置为图片高度的一半
-    const textY = height / 2 - 250;
-    
-    const textImage = Buffer.from(
-      `<svg width="${width}" height="${height}">
-        <text x="${textX}" y="${textY}" font-family="Arial" font-size="${fontSize}" fill="black" dominant-baseline="middle" text-anchor="middle">${name}</text>
-      </svg>`
-    );
+    const svgText = `
+      <svg width="${width}" height="${height}">
+        <text x="50%" y="${height / 2 + 25}" font-family="Myriad Pro" font-size="100" fill="white" dominant-baseline="middle" text-anchor="middle">
+          ${name}
+        </text>
+      </svg>`;
+
+    const textImage = Buffer.from(svgText);
 
     const image = await sharp(baseImage)
-      .composite([{ input: textImage, top: 0, left: 0 }])
+      .composite([{ input: textImage }])
       .png()
       .toBuffer();
 
