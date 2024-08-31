@@ -4,7 +4,7 @@ import sharp from 'sharp';
 export default defineEventHandler(async (event) => {
   try {
     const { name } = await readBody(event);
-    const baseImage = 'public/invitations.png';
+    const baseImage = '/public/invitations.png';
 
     const { width = 1000, height = 800 } = await sharp(baseImage).metadata();
 
