@@ -1,62 +1,74 @@
 <template>
   <div class="relative bg-white mx-auto max-w-7xl px-6 py-16 sm:py-20 lg:flex lg:items-center lg:px-8">
-    <div class="lg:w-1/2 text-center lg:text-left">
-      <h1 class="mt-10 text-4xl font-bold text-gray-900 sm:text-6xl">MoeCTF 2024</h1>
-      <p class="mt-6 text-lg text-gray-600">2024/01/01 00:00(UTC+8) - 2024/01/03 22:00(UTC+8)</p>
-      <div class="mt-10 flex justify-center lg:justify-start">
-        <input type="text" v-model="teamNameInput" placeholder="Enter your team name" class="input input-bordered w-full max-w-xs" />
-        <button class="btn ml-2" @click="handleApiCall">Make</button>
-      </div>
-    </div>
-    <div class="lg:w-1/2 mt-16 sm:mt-24 lg:mt-0 flex justify-center items-center">
-      <div class="mockup-phone max-w-full drop-shadow-xl">
-        <div class="camera"></div>
-        <div class="display">
-          <div :class="{ 'blur': isRequesting }" class="artboard artboard-demo phone-1 relative">
-            <img :src="generatedPoster" alt="Team Poster" v-if="generatedPoster" class="h-full" />
-            <img v-else alt="Default Logo" src="/public/invitations.png" class="h-full" />
-            <a v-if="generatedPoster" :href="generatedPoster" download="invitations.png" class="absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white py-2 px-4 rounded-xl">
-              Save
-            </a>
-          </div>
-        </div>
+    <HeaderSection 
+      :is-loading="isLoading" 
+      @generate="handleGeneratePoster" 
+    />
+    <PosterGenerator 
+      :poster-url="posterUrl" 
+      :is-loading="isLoading" 
+    />
+    
+    <div v-if="error" class="fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 max-w-sm">
+      <div class="flex items-center justify-between">
+        <span>{{ error }}</span>
+        <button @click="clearError" class="ml-2 text-white hover:text-gray-200">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
       </div>
     </div>
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref } from 'vue';
+<script setup>
+import { onUnmounted } from 'vue';
+import HeaderSection from '~/components/HeaderSection.vue';
+import PosterGenerator from '~/components/PosterGenerator.vue';
 
-const teamNameInput = ref('');
-const generatedPoster = ref<string | null>(null);
-const isRequesting = ref(false);
+const { isLoading, error, posterUrl, generatePoster, cleanup } = useApiGenerator();
 
-async function handleApiCall() {
-  const teamName = teamNameInput.value.trim();
-  if (!teamName) {
-    alert("Please enter your team name.");
-    return;
-  }
-  isRequesting.value = true;
-  try {
-    const response = await fetch('/api/hello', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: teamName }),
-    });
-    const data = await response.blob();
-    generatedPoster.value = URL.createObjectURL(data);
-  } catch (error) {
-    console.error('An error occurred:', error);
-  } finally {
-    isRequesting.value = false;
-  }
-}
+const handleGeneratePoster = (teamName) => {
+  generatePoster(teamName);
+};
+
+const clearError = () => {
+  cleanup();
+};
+
+onUnmounted(() => {
+  cleanup();
+});
 </script>
 
 <style>
-::selection { background: #0095ff1a; }
-::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-thumb { border-radius: 10px; background: #0003; }
+::selection { 
+  background: rgba(0, 149, 255, 0.1); 
+}
+
+::-webkit-scrollbar { 
+  width: 8px; 
+}
+
+::-webkit-scrollbar-thumb { 
+  border-radius: 10px; 
+  background: rgba(0, 0, 0, 0.2); 
+}
+
+::-webkit-scrollbar-thumb:hover { 
+  background: rgba(0, 0, 0, 0.3); 
+}
+
+.btn {
+  @apply transition-all duration-200 ease-in-out;
+}
+
+.input {
+  @apply transition-all duration-200 ease-in-out;
+}
+
+.input:focus {
+  @apply border-primary;
+}
 </style>
