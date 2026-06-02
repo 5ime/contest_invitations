@@ -1,5 +1,5 @@
 import { copyFileSync, existsSync, mkdirSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const rootDir = join(fileURLToPath(new URL('.', import.meta.url)), '..')
