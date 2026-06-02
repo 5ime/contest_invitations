@@ -34,7 +34,7 @@ CONTEST_TITLE=MoeCTF 2024
 IMAGE_MAX_NAME_LENGTH=50
 IMAGE_DEFAULT_FONT_SIZE=100
 IMAGE_MIN_FONT_SIZE=24
-IMAGE_FONT_FAMILY=Arial, sans-serif
+IMAGE_FONT_FAMILY=Noto Sans SC
 IMAGE_TEXT_COLOR=white
 IMAGE_POSITION_Y_OFFSET=25
 IMAGE_QUALITY=90
@@ -142,11 +142,13 @@ npm run dev
 
 #### 底图维护
 
-只需替换 **`public/invitations.png`**。构建时会自动同步到 `server/assets/` 并打进 Serverless 函数：
+只需替换 **`public/invitations.png`**。构建时会自动同步底图与中文字体到 `server/assets/` 并打进 Serverless 函数：
 
 ```bash
 npm run prebuild   # 或任意 npm run dev / npm run build 时自动执行
 ```
+
+> 海报文字使用内嵌的 **Noto Sans SC** 字体（来自 `@fontsource/noto-sans-sc`），避免 Vercel Linux 环境缺少中文字体导致乱码/方框。
 
 #### 部署后验证（Smoke Test）
 

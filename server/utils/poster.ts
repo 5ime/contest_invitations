@@ -2,8 +2,11 @@ import sharp from 'sharp'
 import type { ServerConfig } from '~/types'
 
 const BASE_IMAGE_NAME = 'invitations.png'
-const BASE_IMAGE_STORAGE = 'assets:server'
+const FONT_FILE_NAME = 'NotoSansSC.woff2'
+const ASSETS_STORAGE = 'assets:server'
 const FALLBACK_DIMENSIONS = { width: 1000, height: 800 } as const
+
+let cachedFontDataUri: string | null = null
 
 function escapeXmlEntities(text: string): string {
   return text.replace(/[<>&"']/g, (char) => {
@@ -35,14 +38,21 @@ function generateSvgOverlay(
   width: number,
   height: number,
   config: ServerConfig,
+  fontDataUri: string,
 ): string {
   const fontSize = calculateFontSize(teamName.length, config)
   const escapedName = escapeXmlEntities(teamName)
   const safeFontFamily = sanitizeFontFamily(config.imageFontFamily)
 
   return `
-    <svg width="${width}" height="${height}">
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
       <defs>
+        <style><![CDATA[
+          @font-face {
+            font-family: '${safeFontFamily}';
+            src: url('${fontDataUri}') format('woff2');
+          }
+        ]]></style>
         <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
           <feDropShadow
             dx="${config.imageShadowDx}"
@@ -68,9 +78,9 @@ function generateSvgOverlay(
     </svg>`
 }
 
-async function getBaseImageBuffer(): Promise<Buffer> {
-  const storage = useStorage(BASE_IMAGE_STORAGE)
-  const item = await storage.getItemRaw(BASE_IMAGE_NAME)
+async function getAssetBuffer(fileName: string): Promise<Buffer> {
+  const storage = useStorage(ASSETS_STORAGE)
+  const item = await storage.getItemRaw(fileName)
 
   if (item instanceof Buffer) {
     return item
@@ -80,14 +90,27 @@ async function getBaseImageBuffer(): Promise<Buffer> {
     return Buffer.from(item)
   }
 
-  throw new Error(`Base image not found: ${BASE_IMAGE_NAME}`)
+  throw new Error(`Asset not found: ${fileName}`)
+}
+
+async function getFontDataUri(): Promise<string> {
+  if (cachedFontDataUri) {
+    return cachedFontDataUri
+  }
+
+  const fontBuffer = await getAssetBuffer(FONT_FILE_NAME)
+  cachedFontDataUri = `data:font/woff2;base64,${fontBuffer.toString('base64')}`
+  return cachedFontDataUri
 }
 
 export async function generatePosterImage(
   teamName: string,
   config: ServerConfig,
 ): Promise<Buffer> {
-  const baseImageBuffer = await getBaseImageBuffer()
+  const [baseImageBuffer, fontDataUri] = await Promise.all([
+    getAssetBuffer(BASE_IMAGE_NAME),
+    getFontDataUri(),
+  ])
 
   const metadata = await sharp(baseImageBuffer)
     .metadata()
@@ -95,7 +118,7 @@ export async function generatePosterImage(
 
   const width = metadata.width ?? FALLBACK_DIMENSIONS.width
   const height = metadata.height ?? FALLBACK_DIMENSIONS.height
-  const svgOverlay = generateSvgOverlay(teamName, width, height, config)
+  const svgOverlay = generateSvgOverlay(teamName, width, height, config, fontDataUri)
 
   return sharp(baseImageBuffer)
     .composite([{ input: Buffer.from(svgOverlay), blend: 'over' }])

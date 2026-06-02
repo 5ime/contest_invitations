@@ -1,5 +1,5 @@
 const baseUrl = (process.argv[2] || 'http://localhost:3000').replace(/\/$/, '')
-const teamName = process.argv[3] || 'SmokeTest'
+const teamName = process.argv[3] || '测试团队'
 const endpoint = `${baseUrl}/api/generate-poster`
 
 const response = await fetch(endpoint, {

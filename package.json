@@ -3,19 +3,20 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "prebuild": "node scripts/sync-base-image.mjs",
-    "predev": "node scripts/sync-base-image.mjs",
+    "prebuild": "node scripts/sync-server-assets.mjs",
+    "predev": "node scripts/sync-server-assets.mjs",
     "build": "nuxt build",
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "node scripts/sync-base-image.mjs && nuxt prepare",
+    "postinstall": "node scripts/sync-server-assets.mjs && nuxt prepare",
     "typecheck": "nuxt prepare && vue-tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "smoke-test": "node scripts/smoke-test.mjs"
   },
   "dependencies": {
+    "@fontsource/noto-sans-sc": "^5.2.9",
     "@nuxtjs/tailwindcss": "^6.12.0",
     "nuxt": "^3.11.2",
     "sharp": "^0.33.3"

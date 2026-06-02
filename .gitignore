@@ -23,5 +23,6 @@ logs
 .env.*
 !.env.example
 
-# Generated from public/invitations.png before build
+# Generated before build (see scripts/sync-server-assets.mjs)
 server/assets/invitations.png
+server/assets/NotoSansSC.woff2

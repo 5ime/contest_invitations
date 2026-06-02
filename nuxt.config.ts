@@ -18,7 +18,7 @@ export default defineNuxtConfig({
     imageMaxNameLength: process.env.IMAGE_MAX_NAME_LENGTH || '50',
     imageDefaultFontSize: process.env.IMAGE_DEFAULT_FONT_SIZE || '100',
     imageMinFontSize: process.env.IMAGE_MIN_FONT_SIZE || '24',
-    imageFontFamily: process.env.IMAGE_FONT_FAMILY || 'Arial, sans-serif',
+    imageFontFamily: process.env.IMAGE_FONT_FAMILY || 'Noto Sans SC',
     imageTextColor: process.env.IMAGE_TEXT_COLOR || 'white',
     imagePositionYOffset: process.env.IMAGE_POSITION_Y_OFFSET || '25',
     imageQuality: process.env.IMAGE_QUALITY || '90',
