@@ -148,7 +148,7 @@ npm run dev
 npm run prebuild   # 或任意 npm run dev / npm run build 时自动执行
 ```
 
-> 海报文字使用内嵌的 **Noto Sans SC** 字体（来自 `@fontsource/noto-sans-sc`），避免 Vercel Linux 环境缺少中文字体导致乱码/方框。
+> 海报文字通过 **opentype.js** 将 **Noto Sans SC** 转为 SVG 路径再合成（Sharp/librsvg 不支持 SVG `@font-face` 嵌入字体，Vercel Linux 上会乱码）。
 
 #### 部署后验证（Smoke Test）
 

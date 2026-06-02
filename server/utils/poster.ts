@@ -1,29 +1,14 @@
+import opentype from 'opentype.js'
 import sharp from 'sharp'
 import type { ServerConfig } from '~/types'
 
 const BASE_IMAGE_NAME = 'invitations.png'
-const FONT_FILE_NAME = 'NotoSansSC.woff2'
+const FONT_FILE_NAME = 'NotoSansSC.woff'
 const ASSETS_STORAGE = 'assets:server'
+const BASE64_PREFIX = '\0base64:'
 const FALLBACK_DIMENSIONS = { width: 1000, height: 800 } as const
 
-let cachedFontDataUri: string | null = null
-
-function escapeXmlEntities(text: string): string {
-  return text.replace(/[<>&"']/g, (char) => {
-    const entities: Record<string, string> = {
-      '<': '&lt;',
-      '>': '&gt;',
-      '&': '&amp;',
-      '"': '&quot;',
-      "'": '&#39;',
-    }
-    return entities[char] ?? char
-  })
-}
-
-function sanitizeFontFamily(fontFamily: string): string {
-  return fontFamily.replace(/[<>"']/g, '')
-}
+let cachedFont: opentype.Font | null = null
 
 function calculateFontSize(textLength: number, config: ServerConfig): number {
   const ratio = Math.min(1, 30 / textLength)
@@ -38,21 +23,20 @@ function generateSvgOverlay(
   width: number,
   height: number,
   config: ServerConfig,
-  fontDataUri: string,
+  font: opentype.Font,
 ): string {
   const fontSize = calculateFontSize(teamName.length, config)
-  const escapedName = escapeXmlEntities(teamName)
-  const safeFontFamily = sanitizeFontFamily(config.imageFontFamily)
+  const probe = font.getPath(teamName, 0, 0, fontSize)
+  const bbox = probe.getBoundingBox()
+  const textWidth = bbox.x2 - bbox.x1
+  const centerY = height / 2 + config.imagePositionYOffset
+  const x = (width - textWidth) / 2 - bbox.x1
+  const y = centerY - (bbox.y1 + bbox.y2) / 2
+  const pathData = font.getPath(teamName, x, y, fontSize).toPathData(2)
 
   return `
     <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <style><![CDATA[
-          @font-face {
-            font-family: '${safeFontFamily}';
-            src: url('${fontDataUri}') format('woff2');
-          }
-        ]]></style>
         <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
           <feDropShadow
             dx="${config.imageShadowDx}"
@@ -63,53 +47,114 @@ function generateSvgOverlay(
           />
         </filter>
       </defs>
-      <text
-        x="50%"
-        y="${height / 2 + config.imagePositionYOffset}"
-        font-family="${safeFontFamily}"
-        font-size="${fontSize}"
+      <path
+        d="${pathData}"
         fill="${config.imageTextColor}"
-        dominant-baseline="middle"
-        text-anchor="middle"
         filter="url(#shadow)"
-      >
-        ${escapedName}
-      </text>
+      />
     </svg>`
+}
+
+function isByteRecord(value: unknown): value is Record<string, number> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false
+  }
+
+  const keys = Object.keys(value)
+  return keys.length > 0 && keys.every(key => /^\d+$/.test(key))
+}
+
+function normalizeAssetBuffer(data: unknown, fileName: string): Buffer {
+  if (data == null) {
+    throw new Error(`Asset not found: ${fileName}`)
+  }
+
+  if (Buffer.isBuffer(data)) {
+    return data
+  }
+
+  if (data instanceof Uint8Array) {
+    return Buffer.from(data)
+  }
+
+  if (data instanceof ArrayBuffer) {
+    return Buffer.from(data)
+  }
+
+  if (typeof data === 'string') {
+    if (data.startsWith(BASE64_PREFIX)) {
+      return Buffer.from(data.slice(BASE64_PREFIX.length), 'base64')
+    }
+
+    return Buffer.from(data, 'latin1')
+  }
+
+  if (isByteRecord(data)) {
+    const length = Math.max(...Object.keys(data).map(key => Number.parseInt(key, 10))) + 1
+    const bytes = new Uint8Array(length)
+
+    for (const [key, value] of Object.entries(data)) {
+      if (typeof value === 'number') {
+        bytes[Number.parseInt(key, 10)] = value
+      }
+    }
+
+    return Buffer.from(bytes)
+  }
+
+  throw new Error(`Unsupported asset data for ${fileName}`)
+}
+
+function assertFontBuffer(buffer: Buffer): void {
+  if (buffer.length < 4) {
+    throw new Error('Font asset is empty')
+  }
+
+  const magic = buffer.subarray(0, 4).toString('ascii')
+  const validMagic = magic === 'wOFF' || magic === 'wOF2' || magic === 'OTTO'
+    || (buffer[0] === 0x00 && buffer[1] === 0x01 && buffer[2] === 0x00 && buffer[3] === 0x00)
+
+  if (!validMagic) {
+    throw new Error(`Invalid font asset (magic: ${buffer.subarray(0, 4).toString('hex')})`)
+  }
 }
 
 async function getAssetBuffer(fileName: string): Promise<Buffer> {
   const storage = useStorage(ASSETS_STORAGE)
-  const item = await storage.getItemRaw(fileName)
+  let item = await storage.getItemRaw(fileName)
 
-  if (item instanceof Buffer) {
-    return item
+  if (item == null) {
+    item = await storage.getItem(fileName)
   }
 
-  if (item instanceof Uint8Array) {
-    return Buffer.from(item)
-  }
-
-  throw new Error(`Asset not found: ${fileName}`)
+  return normalizeAssetBuffer(item, fileName)
 }
 
-async function getFontDataUri(): Promise<string> {
-  if (cachedFontDataUri) {
-    return cachedFontDataUri
+async function getFont(): Promise<opentype.Font> {
+  if (cachedFont) {
+    return cachedFont
   }
 
   const fontBuffer = await getAssetBuffer(FONT_FILE_NAME)
-  cachedFontDataUri = `data:font/woff2;base64,${fontBuffer.toString('base64')}`
-  return cachedFontDataUri
+  assertFontBuffer(fontBuffer)
+  cachedFont = opentype.parse(toArrayBuffer(fontBuffer))
+  return cachedFont
+}
+
+function toArrayBuffer(buffer: Buffer): ArrayBuffer {
+  return buffer.buffer.slice(
+    buffer.byteOffset,
+    buffer.byteOffset + buffer.byteLength,
+  ) as ArrayBuffer
 }
 
 export async function generatePosterImage(
   teamName: string,
   config: ServerConfig,
 ): Promise<Buffer> {
-  const [baseImageBuffer, fontDataUri] = await Promise.all([
+  const [baseImageBuffer, font] = await Promise.all([
     getAssetBuffer(BASE_IMAGE_NAME),
-    getFontDataUri(),
+    getFont(),
   ])
 
   const metadata = await sharp(baseImageBuffer)
@@ -118,7 +163,7 @@ export async function generatePosterImage(
 
   const width = metadata.width ?? FALLBACK_DIMENSIONS.width
   const height = metadata.height ?? FALLBACK_DIMENSIONS.height
-  const svgOverlay = generateSvgOverlay(teamName, width, height, config, fontDataUri)
+  const svgOverlay = generateSvgOverlay(teamName, width, height, config, font)
 
   return sharp(baseImageBuffer)
     .composite([{ input: Buffer.from(svgOverlay), blend: 'over' }])

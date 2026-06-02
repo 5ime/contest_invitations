@@ -17,6 +17,7 @@ logs
 .DS_Store
 .fleet
 .idea
+.vercel
 
 # Local env files
 .env
@@ -25,4 +26,4 @@ logs
 
 # Generated before build (see scripts/sync-server-assets.mjs)
 server/assets/invitations.png
-server/assets/NotoSansSC.woff2
+server/assets/NotoSansSC.woff
