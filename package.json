@@ -3,11 +3,17 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "prebuild": "node scripts/sync-base-image.mjs",
+    "predev": "node scripts/sync-base-image.mjs",
     "build": "nuxt build",
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "node scripts/sync-base-image.mjs && nuxt prepare",
+    "typecheck": "nuxt prepare && vue-tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "smoke-test": "node scripts/smoke-test.mjs"
   },
   "dependencies": {
     "@nuxtjs/tailwindcss": "^6.12.0",
@@ -15,6 +21,11 @@
     "sharp": "^0.33.3"
   },
   "devDependencies": {
-    "daisyui": "^4.10.2"
+    "@nuxt/eslint": "^1.15.2",
+    "@types/node": "^22.19.19",
+    "daisyui": "^4.10.2",
+    "eslint": "^9.39.4",
+    "typescript": "^5.4.5",
+    "vue-tsc": "^2.0.11"
   }
 }

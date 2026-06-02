@@ -1,10 +1,8 @@
 export default defineNuxtConfig({
   devtools: { enabled: false },
-  modules: ["@nuxtjs/tailwindcss"],
+  modules: ['@nuxtjs/tailwindcss', '@nuxt/eslint'],
   nitro: {
-    experimental: {
-      wasm: true
-    }
+    preset: 'vercel',
   },
   app: {
     head: {
@@ -23,7 +21,6 @@ export default defineNuxtConfig({
     imageFontFamily: process.env.IMAGE_FONT_FAMILY || 'Arial, sans-serif',
     imageTextColor: process.env.IMAGE_TEXT_COLOR || 'white',
     imagePositionYOffset: process.env.IMAGE_POSITION_Y_OFFSET || '25',
-    imageOutputFormat: process.env.IMAGE_OUTPUT_FORMAT || 'png',
     imageQuality: process.env.IMAGE_QUALITY || '90',
     imageCompressionLevel: process.env.IMAGE_COMPRESSION_LEVEL || '6',
     imageShadowDx: process.env.IMAGE_SHADOW_DX || '2',

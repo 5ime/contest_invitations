@@ -1,8 +1,8 @@
-# MoeCTF 2024 邀请函生成器
+# MoeCTF 邀请函生成器
 
 一个基于 Nuxt 3 的邀请函海报生成器，支持自定义团队名称。
 
-## 🚀 快速开始
+## 快速开始
 
 ### 1. 安装依赖
 
@@ -37,7 +37,6 @@ IMAGE_MIN_FONT_SIZE=24
 IMAGE_FONT_FAMILY=Arial, sans-serif
 IMAGE_TEXT_COLOR=white
 IMAGE_POSITION_Y_OFFSET=25
-IMAGE_OUTPUT_FORMAT=png
 IMAGE_QUALITY=90
 IMAGE_COMPRESSION_LEVEL=6
 
@@ -57,20 +56,23 @@ npm run dev
 
 访问 `http://localhost:3000` 查看应用。
 
-## 🛠️ 技术栈
+## 技术栈
 
 - **框架**: Nuxt 3
 - **样式**: Tailwind CSS + DaisyUI
 - **图片处理**: Sharp
 - **语言**: TypeScript
-- **部署**: 静态生成
+- **部署**: Vercel Serverless（Nuxt SSR）
 
-## 📁 项目结构
+## 项目结构
 
 ```
 ├── components/          # Vue 组件
 ├── composables/        # 可复用的逻辑
-├── server/api/         # API 端点
+├── server/
+│   ├── api/            # API 端点
+│   └── assets/         # 构建时从 public/ 同步的底图（勿手动维护）
+├── scripts/            # 构建与部署脚本
 ├── types/              # TypeScript 类型定义
 ├── utils/              # 工具函数
 ├── public/             # 静态资源
@@ -78,17 +80,17 @@ npm run dev
 └── .env.example        # 环境变量示例
 ```
 
-## 🎨 功能特性
+## 功能特性
 
-- ✅ 实时海报生成
-- ✅ 防抖输入优化
-- ✅ 响应式设计
-- ✅ 统一错误处理
-- ✅ 环境变量配置
-- ✅ TypeScript 类型支持
-- ✅ 图片缓存优化
+- 实时海报生成
+- 防抖输入优化
+- 响应式设计
+- 统一错误处理
+- 环境变量配置
+- TypeScript 类型支持
+- 图片生成与下载
 
-## 🔧 配置说明
+## 配置说明
 
 ### 环境变量
 
@@ -105,28 +107,75 @@ npm run dev
 
 > 注意：API配置和错误消息已经在代码中写死，无需通过环境变量配置。
 
-## 📱 使用方法
+## 使用方法
 
 1. 在输入框中输入团队名称
 2. 点击"制作"按钮或等待自动生成
 3. 生成的海报将显示在右侧
-4. 点击"Download"按钮下载海报
+4. 点击「下载」按钮保存海报
 
-## 🚀 部署
+## 部署
 
-### 静态生成
+### Vercel（推荐）
+
+本项目包含 `/api/generate-poster` 服务端 API，请使用 **SSR / Serverless** 部署，**不要**使用 `npm run generate` 静态导出。
+
+#### 部署步骤
+
+1. 将仓库导入 [Vercel](https://vercel.com)
+2. Framework Preset 选 **Nuxt.js**，Build Command 保持 `npm run build`
+3. 在 **Settings → Environment Variables** 配置下表变量（Production / Preview 建议都配）
+4. Deploy 完成后运行 smoke test 验证 API
+
+#### Vercel 环境变量清单
+
+| 变量 | 必填 | 说明 |
+|------|------|------|
+| `CONTEST_TITLE` | 建议 | 页面主标题 |
+| `CONTEST_START_TIME` | 建议 | 比赛开始时间展示 |
+| `CONTEST_END_TIME` | 建议 | 比赛结束时间展示 |
+| `APP_NAME` | 可选 | 浏览器标题，默认 `MoeCTF 2024` |
+| `APP_DESCRIPTION` | 可选 | SEO 描述 |
+| `IMAGE_*` | 可选 | 海报字体、颜色、质量等，均有默认值 |
+
+> 未配置时使用 `nuxt.config.ts` 中的默认值，本地开发可复制 `.env.example` 为 `.env`。
+
+#### 底图维护
+
+只需替换 **`public/invitations.png`**。构建时会自动同步到 `server/assets/` 并打进 Serverless 函数：
 
 ```bash
-npm run generate
+npm run prebuild   # 或任意 npm run dev / npm run build 时自动执行
 ```
 
-### 构建
+#### 部署后验证（Smoke Test）
+
+```bash
+# 替换为你的 Vercel 域名
+npm run smoke-test -- https://your-app.vercel.app
+
+# 本地 preview 验证
+npm run build && npm run preview
+npm run smoke-test -- http://localhost:3000
+```
+
+成功时会输出 `OK: ... size=... bytes`。
+
+#### 本地构建验证
 
 ```bash
 npm run build
 ```
 
-## 📝 开发说明
+### 静态生成（不适用本项目）
+
+若移除服务端 API 后才可使用：
+
+```bash
+npm run generate
+```
+
+## 开发说明
 
 ### 添加新功能
 

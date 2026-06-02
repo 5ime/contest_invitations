@@ -22,3 +22,6 @@ logs
 .env
 .env.*
 !.env.example
+
+# Generated from public/invitations.png before build
+server/assets/invitations.png

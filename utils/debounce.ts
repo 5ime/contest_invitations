@@ -1,26 +1,30 @@
-export function debounce<T extends (...args: any[]) => any>(
+import type { DebounceFunction } from '~/types'
+
+export function debounce<T extends (...args: never[]) => unknown>(
   func: T,
   wait: number,
-  immediate?: boolean
-): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout | null = null;
+  immediate = false,
+): DebounceFunction<T> {
+  let timeout: ReturnType<typeof setTimeout> | undefined
 
-  return function executedFunction(...args: Parameters<T>) {
+  return (...args: Parameters<T>) => {
     const later = () => {
-      timeout = null;
-      if (!immediate) func(...args);
-    };
-
-    const callNow = immediate && !timeout;
-
-    if (timeout) {
-      clearTimeout(timeout);
+      timeout = undefined
+      if (!immediate) {
+        func(...args)
+      }
     }
 
-    timeout = setTimeout(later, wait);
+    const callNow = immediate && !timeout
+
+    if (timeout !== undefined) {
+      clearTimeout(timeout)
+    }
+
+    timeout = setTimeout(later, wait)
 
     if (callNow) {
-      func(...args);
+      func(...args)
     }
-  };
-} 
+  }
+}
